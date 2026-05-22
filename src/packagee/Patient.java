@@ -6,11 +6,15 @@ package packagee;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;  //
+import java.util.List;        //
 
 /**
  *
  * @author edangulo
  */
+
+//TODO LO QUE TENGA AL LADO UN DOBLE SLASH ES UN CAMBIO O CORRECCION DEL CODIGO
 public class Patient extends User {
     
     private String email;
@@ -20,6 +24,30 @@ public class Patient extends User {
     private String address;
     private ArrayList<Appointment> appointments;
     private Hospitalization hospitalization;
+
+    public String getEmail() {  //
+        return email; 
+    }
+    
+    public LocalDate getBirthdate() {  //
+        return birthdate; 
+    }
+
+    public boolean isGender() {  //
+        return gender; 
+    }
+
+    public long getPhone() {  //
+        return phone; 
+    }
+
+    public String getAddress() {  //
+        return address; 
+    }
+
+    public Hospitalization getHospitalization() {  //
+        return hospitalization; 
+    }
 
     public void setEmail(String email) {
         this.email = email;
@@ -45,12 +73,13 @@ public class Patient extends User {
         this.hospitalization = hospitalization;
     }
 
-    public ArrayList<Appointment> getAppointments() {
+    public List<Appointment> getAppointments() {
+        appointments.sort(Comparator.comparing(Appointment::getDatetime).reversed());  //
         return appointments;
     }
     
-    public void addAppointment(Appointment a) {
-        this.appointments.add(a);
+    public void addAppointment(Appointment appointment) {  //
+        this.appointments.add(appointment);  //
     }
 
     public Patient(long id, String username, String firstname, String lastname, String password, String email, LocalDate birthdate, boolean gender, long phone, String address) {

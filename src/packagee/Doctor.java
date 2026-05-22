@@ -5,11 +5,16 @@
 package packagee;
 
 import java.util.ArrayList;
+import java.util.Comparator;         //
+import java.util.List;               //
+import java.util.stream.Collectors;  //
 
 /**
  *
  * @author edangulo
  */
+
+//TODO LO QUE TENGA AL LADO UN DOBLE SLASH ES UN CAMBIO O CORRECCION DEL CODIGO
 public class Doctor extends User {
     
     private Specialty specialty;
@@ -24,9 +29,20 @@ public class Doctor extends User {
         this.specialty = specialty;
         this.licenceNumber = licenceNumber;
         this.assignedOffice = assignedOffice;
+        this.appointments = new ArrayList<>();  //
+        this.hospitalizations = new ArrayList<>();  //
+    }
+    
+    public String getLicenceNumber() {  //
+        return licenceNumber; 
+    }
+    
+    public String getAssignedOffice() {  //
+        return assignedOffice; 
     }
 
-    public ArrayList<Appointment> getAppointments() {
+    public List<Appointment> getAppointments() {
+        appointments.sort(Comparator.comparing(Appointment::getDatetime).reversed());  //
         return appointments;
     }
 
@@ -34,8 +50,8 @@ public class Doctor extends User {
         return specialty;
     }
     
-    public boolean addHospitalization(Hospitalization hosp){
-        return hospitalizations.add(hosp);
+    public boolean addHospitalization(Hospitalization hospitalization){
+        return hospitalizations.add(hospitalization);
     }
 
     public void setSpecialty(Specialty specialty) {
@@ -48,5 +64,29 @@ public class Doctor extends User {
 
     public void setAssignedOffice(String assignedOffice) {
         this.assignedOffice = assignedOffice;
+    }
+    
+    public List<Appointment> getPendingAppointments() {  //
+        return appointments.stream()
+                .filter(a -> a.getStatus() == AppointmentStatus.PENDING)
+                .sorted(Comparator.comparing(Appointment::getDatetime).reversed())
+                .collect(Collectors.toList());
+    }
+    
+    public List<Hospitalization> getHospitalizations() {  //
+        return hospitalizations; 
+    }
+    
+    public void addAppointment(Appointment appointment) {  //
+        this.appointments.add(appointment);
+    }
+    
+    public boolean isAvailable(java.time.LocalDateTime datetime) {  //
+        for (Appointment a : appointments) {
+            if (a.getStatus() == AppointmentStatus.CANCELED) continue;
+            long diff = Math.abs(java.time.Duration.between(a.getDatetime(), datetime).toMinutes());
+            if (diff < 15) return false;
+        }
+        return true;
     }
 }

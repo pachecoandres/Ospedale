@@ -8,11 +8,13 @@ package packagee;
  *
  * @author edangulo
  */
+
+//TODO LO QUE TENGA AL LADO UN DOBLE SLASH ES UN CAMBIO O CORRECCION DEL CODIGO
 public abstract class User {
     
     protected final long id;
     protected String username;
-
+  
     public void setUsername(String username) {
         this.username = username;
     }

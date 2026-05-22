@@ -6,26 +6,30 @@ package packagee;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;  //
 
 /**
  *
  * @author edangulo
  */
+//TODO LO QUE TENGA AL LADO UN DOBLE SLASH ES UN CAMBIO O CORRECCION DEL CODIGO
 public class Appointment {
     
     private final String id;
-    private Patient patient;
+    private final Patient patient;  //
     private Doctor doctor;
-    private Specialty specialty;
+    private final Specialty specialty;  //
     private LocalDateTime datetime;
     private String reason;
+    private final boolean type;  //
+    private List<Prescription> prescriptions;  //
+    private AppointmentStatus status;  //
+    
 
     public void setReason(String reason) {
         this.reason = reason;
     }
-    private boolean type;
-    private ArrayList<Prescription> prescriptions;
-    private AppointmentStatus status;
+
     private String diagnosis;
     private String observations;
     private String recommendedTreatment;
@@ -46,6 +50,10 @@ public class Appointment {
     public void setFollowUp(String followUp) {
         this.followUp = followUp;
     }
+    
+    public void addPrescription(Prescription prescription) {  //
+        this.prescriptions.add(prescription);
+    }
 
     public Appointment(String id, Patient patient, Doctor doctor, Specialty specialty, LocalDateTime datetime, String reason, boolean type) {
         this.id = id;
@@ -57,11 +65,19 @@ public class Appointment {
         this.type = type;
         this.status = AppointmentStatus.REQUESTED;
         this.prescriptions = new ArrayList<>();
+        patient.addAppointment(this);  //
+        doctor.addAppointment(this);  //
     }
 
     public void setStatus(AppointmentStatus status) {
         this.status = status;
     }
+    
+    public void setDatetime(LocalDateTime datetime) {  //
+        this.datetime = datetime;
+    }
+    
+    
 
     public String getId() {
         return id;
@@ -90,9 +106,28 @@ public class Appointment {
     public Patient getPatient() {
         return patient;
     }
+    
+    public String getReason() {
+        return reason; 
+    }
 
-    public boolean addPrescription(Prescription prescrip) {
-        return this.prescriptions.add(prescrip);
+    public List<Prescription> getPrescriptions() {  //
+        return prescriptions; 
     }
     
+    public String getDiagnosis() {  //
+        return diagnosis; 
+    }
+    
+    public String getObservations() {  //
+        return observations; 
+    }
+    
+    public String getRecommendedTreatment() {  //
+        return recommendedTreatment; 
+    }
+    
+    public String getFollowUp() {  //
+        return followUp; 
+    }
 }
