@@ -39,6 +39,21 @@ public class JsonUserRepository implements UserRepository {
         return null;
     }
 
+    @Override
+    public User findById(long id) {
+        for (User user : users) {
+            if (user.getId() == id) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void add(User user) {
+        users.add(user);
+    }
+
     private void loadUsers() {
         try {
             String content = Files.readString(Path.of(filePath));

@@ -5,12 +5,11 @@
 package packagee;
 
 import java.awt.Color;
-import java.time.LocalDate;
-import java.time.Month;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import packagee.controller.AuthController;
 import packagee.controller.ControllerResponse;
+import packagee.controller.PatientController;
 import packagee.repository.JsonUserRepository;
 import packagee.repository.UserRepository;
 
@@ -25,18 +24,21 @@ public class NewJFrame extends javax.swing.JFrame {
     private ArrayList<User> users;
     private ArrayList<Hospitalization> hospitalizations;
     private ArrayList<Appointment> appointments;
+    private UserRepository userRepository;
     private AuthController authController;
+    private PatientController patientController;
 
     public NewJFrame() {
         initComponents();
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
 
-        UserRepository userRepository = new JsonUserRepository("json/users.json");
+        this.userRepository = new JsonUserRepository("json/users.json");
         this.users = new ArrayList<>(userRepository.findAll());
         this.hospitalizations = new ArrayList<>();
         this.appointments = new ArrayList<>();
         this.authController = new AuthController(userRepository);
+        this.patientController = new PatientController(userRepository);
     }
 
     /**
@@ -445,27 +447,45 @@ public class NewJFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
-        String firstname = jTextField3.getText();
-        String lastname = jTextField4.getText();
-        long id = Long.parseLong(jTextField5.getText());
-        boolean gender = jComboBox1.getSelectedIndex() == 1;
-        String birth = jTextField12.getText();
-        String address = jTextField11.getText();
-        long phone = Long.parseLong(jTextField6.getText());
-        String email = jTextField7.getText();
-        String user = jTextField8.getText();
-        String password = jTextField9.getText();
-        String comPassword = jTextField10.getText();
-        LocalDate birthdate = LocalDate.of(Integer.parseInt(birth.substring(0, 4)), Integer.parseInt(birth.substring(5, 7)), Integer.parseInt(birth.substring(8)));
-        if (comPassword.equals(password)) {
-            users.add(new Patient(id, user, firstname, lastname, password, email, birthdate, gender, phone, address));
+        ControllerResponse response = patientController.registerPatient(
+                jTextField3.getText(),
+                jTextField4.getText(),
+                jTextField5.getText(),
+                String.valueOf(jComboBox1.getSelectedItem()),
+                jTextField12.getText(),
+                jTextField11.getText(),
+                jTextField6.getText(),
+                jTextField7.getText(),
+                jTextField8.getText(),
+                jTextField9.getText(),
+                jTextField10.getText()
+        );
+
+        JOptionPane.showMessageDialog(this, response.getMessage());
+        if (response.isOk()) {
+            users.clear();
+            users.addAll(userRepository.findAll());
+            clearPatientForm();
         }
         
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jTextField10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField10ActionPerformed
-        // TODO add your handling code here:
     }//GEN-LAST:event_jTextField10ActionPerformed
+
+    private void clearPatientForm() {
+        jTextField3.setText("");
+        jTextField4.setText("");
+        jTextField5.setText("");
+        jComboBox1.setSelectedIndex(0);
+        jTextField12.setText("");
+        jTextField11.setText("");
+        jTextField6.setText("");
+        jTextField7.setText("");
+        jTextField8.setText("");
+        jTextField9.setText("");
+        jTextField10.setText("");
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;

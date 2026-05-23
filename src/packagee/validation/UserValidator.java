@@ -1,5 +1,7 @@
 package packagee.validation;
 
+import java.time.LocalDate;
+
 public class UserValidator {
 
     public boolean isEmpty(String value) {
@@ -10,12 +12,32 @@ public class UserValidator {
         return id > 0 && String.valueOf(id).length() == 12;
     }
 
+    public boolean isValidIdText(String idText) {
+        return idText != null && idText.matches("[1-9]\\d{11}");
+    }
+
     public boolean isValidEmail(String email) {
         return email != null && email.matches("^[\\w.-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
     }
 
     public boolean isValidPhone(String phone) {
         return phone != null && phone.matches("\\d{10}");
+    }
+
+    public boolean isValidDate(String date) {
+        try {
+            if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                return false;
+            }
+            LocalDate.parse(date);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isValidGender(String gender) {
+        return gender != null && (gender.equals("Female") || gender.equals("Male"));
     }
 
     public boolean isValidMedicalLicence(String licence) {
