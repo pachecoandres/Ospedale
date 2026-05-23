@@ -96,6 +96,9 @@ public class JsonUserRepository implements UserRepository {
         if (value.equals("ORTHOPEDICS")) {
             return Specialty.TRAUMATOLOGY_ORTHOPEDICS;
         }
+        if (value.equals("GYNECOLOGY")) {
+            return Specialty.GYNECOLOGY_OBSTETRICS;
+        }
         return Specialty.valueOf(value);
     }
 }

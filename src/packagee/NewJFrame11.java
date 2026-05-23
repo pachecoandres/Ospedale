@@ -6,6 +6,11 @@ package packagee;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import javax.swing.JOptionPane;
+import packagee.controller.ControllerResponse;
+import packagee.controller.DoctorController;
+import packagee.repository.ListUserRepository;
+import packagee.repository.UserRepository;
 
 /**
  *
@@ -19,14 +24,20 @@ public class NewJFrame11 extends javax.swing.JFrame {
     private ArrayList<Appointment>appointments;
     private ArrayList<Hospitalization>hospitalizations;
     private User user;
+    private UserRepository userRepository;
+    private DoctorController doctorController;
+
     public NewJFrame11(User user, ArrayList<User>users,ArrayList<Hospitalization> hospitalizations, ArrayList<Appointment> appointments) {
         initComponents();
         this.user = user;
         this.users = users;
         this.hospitalizations = hospitalizations;
         this.appointments = appointments;
+        this.userRepository = new ListUserRepository(users);
+        this.doctorController = new DoctorController(userRepository);
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
+        loadSelectionCombos();
     }
 
     /**
@@ -415,28 +426,43 @@ public class NewJFrame11 extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
-        String firstname = jTextField3.getText();
-        String lastname = jTextField4.getText();
-        long id = Long.parseLong(jTextField5.getText());
-        String spec = jComboBox1.getItemAt(jComboBox1.getSelectedIndex());
-        String licenseNumber = jTextField6.getText();
-        String assignedOffice = jTextField7.getText();
-        String username = jTextField8.getText();
-        String password = jTextField9.getText();
-        String comPassword = jTextField10.getText();
-        Specialty specialty = Specialty.valueOf(spec.replaceAll(" &", "").replaceAll(" ", "_"));
-        if (password.equals(comPassword)) {
-            users.add(new Doctor(id, username, firstname, lastname, password, specialty, licenseNumber, assignedOffice));
+        ControllerResponse response = doctorController.registerDoctor(
+                jTextField3.getText(),
+                jTextField4.getText(),
+                jTextField5.getText(),
+                String.valueOf(jComboBox1.getSelectedItem()),
+                jTextField6.getText(),
+                jTextField7.getText(),
+                jTextField8.getText(),
+                jTextField9.getText(),
+                jTextField10.getText()
+        );
+
+        JOptionPane.showMessageDialog(this, response.getMessage());
+        if (response.isOk()) {
+            clearDoctorForm();
+            loadSelectionCombos();
         }
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        if (jComboBox2.getSelectedIndex() == 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione un doctor");
+            return;
+        }
+
         long idDoctor = Long.parseLong(jComboBox2.getItemAt(jComboBox2.getSelectedIndex()));
         Doctor temp = null;
         for(User use:this.users){
             if(use.getId() == idDoctor)
-                temp =(Doctor) user;
+                temp =(Doctor) use;
         }
+
+        if (temp == null) {
+            JOptionPane.showMessageDialog(this, "Doctor no encontrado");
+            return;
+        }
+
         NewJFrame111 doctor = new NewJFrame111(user,temp, users, hospitalizations,appointments);
         this.setVisible(false);
         doctor.setVisible(true);
@@ -450,16 +476,55 @@ public class NewJFrame11 extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        long idPatient = Long.parseLong(jComboBox2.getItemAt(jComboBox2.getSelectedIndex()));
+        if (jComboBox3.getSelectedIndex() == 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione un paciente");
+            return;
+        }
+
+        long idPatient = Long.parseLong(jComboBox3.getItemAt(jComboBox3.getSelectedIndex()));
         Patient temp = null;
         for(User use:this.users){
             if(use.getId() == idPatient)
-                temp =(Patient) user;
+                temp =(Patient) use;
         }
+
+        if (temp == null) {
+            JOptionPane.showMessageDialog(this, "Paciente no encontrado");
+            return;
+        }
+
         NewJFrame1 patient = new NewJFrame1(user,temp,users,appointments,hospitalizations);
         this.setVisible(false);
         patient.setVisible(true);
     }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void loadSelectionCombos() {
+        jComboBox2.removeAllItems();
+        jComboBox3.removeAllItems();
+        jComboBox2.addItem("Select one");
+        jComboBox3.addItem("Select one");
+
+        for (User currentUser : users) {
+            if (currentUser instanceof Doctor) {
+                jComboBox2.addItem(String.valueOf(currentUser.getId()));
+            }
+            if (currentUser instanceof Patient) {
+                jComboBox3.addItem(String.valueOf(currentUser.getId()));
+            }
+        }
+    }
+
+    private void clearDoctorForm() {
+        jTextField3.setText("");
+        jTextField4.setText("");
+        jTextField5.setText("");
+        jComboBox1.setSelectedIndex(0);
+        jTextField6.setText("");
+        jTextField7.setText("");
+        jTextField8.setText("");
+        jTextField9.setText("");
+        jTextField10.setText("");
+    }
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

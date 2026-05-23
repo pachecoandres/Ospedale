@@ -1,6 +1,7 @@
 package packagee.validation;
 
 import java.time.LocalDate;
+import packagee.Specialty;
 
 public class UserValidator {
 
@@ -46,5 +47,17 @@ public class UserValidator {
 
     public boolean isValidOffice(String office) {
         return office != null && office.matches("O-\\d{3}");
+    }
+
+    public boolean isValidSpecialty(String specialty) {
+        try {
+            if (isEmpty(specialty) || specialty.equals("Select one")) {
+                return false;
+            }
+            Specialty.fromDisplayString(specialty);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
