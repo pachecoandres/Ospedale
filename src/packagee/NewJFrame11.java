@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import packagee.controller.ControllerResponse;
 import packagee.controller.DoctorController;
+import packagee.observer.DataObserver;
 import packagee.repository.ListUserRepository;
 import packagee.repository.UserRepository;
 
@@ -35,6 +36,12 @@ public class NewJFrame11 extends javax.swing.JFrame {
         this.appointments = appointments;
         this.userRepository = new ListUserRepository(users);
         this.doctorController = new DoctorController(userRepository);
+        this.userRepository.addObserver(new DataObserver() {
+            @Override
+            public void update() {
+                loadSelectionCombos();
+            }
+        });
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
         loadSelectionCombos();

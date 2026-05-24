@@ -123,6 +123,7 @@ public class PatientController {
         patient.setPhone(Long.parseLong(phoneText));
         patient.setAddress(address);
         
+        userRepository.notifyObservers();
         
         return new ControllerResponse(200, "Paciente actualizado correctamente", patientDto.serialize(patient));
     }

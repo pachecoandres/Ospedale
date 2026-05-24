@@ -72,6 +72,12 @@ public class NewJFrame1 extends javax.swing.JFrame {
                 loadPatientCombos();
             }
         });
+        this.userRepository.addObserver(new DataObserver() {
+            @Override
+            public void update() {
+                loadPatientCombos();
+            }
+        });
         if (user instanceof Administrator) {
             jButton7.setVisible(true);
         } else {

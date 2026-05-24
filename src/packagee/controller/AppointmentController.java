@@ -11,6 +11,7 @@ import java.util.List;
 import packagee.Appointment;
 import packagee.AppointmentStatus;
 import packagee.Doctor;
+import packagee.Factory.AppointmentFactory;
 import packagee.Factory.AppointmentIdFactory;
 import packagee.Patient;
 import packagee.Specialty;
@@ -33,6 +34,7 @@ public class AppointmentController {
     private UserValidator validator;
     private AppointmentDto appointmentDto;
     private AppointmentIdFactory appointmentIdFactory;
+    private AppointmentFactory appointmentFactory;
     
     public AppointmentController(AppointmentRepository appointmentRepository, UserRepository userRepository, AppointmentIdFactory appointmentIdFactory) {
         
@@ -41,6 +43,7 @@ public class AppointmentController {
         this.validator = new UserValidator();
         this.appointmentDto = new AppointmentDto();
         this.appointmentIdFactory = appointmentIdFactory;
+        this.appointmentFactory = new AppointmentFactory(appointmentRepository);
     }
     
     public ControllerResponse requestAppointment(String patientIdText, String doctorIdText, 
@@ -108,9 +111,7 @@ public class AppointmentController {
         
         boolean type = typeText.equals("In-person") || typeText.equals("Presencial");
         
-        String appointmentId = appointmentIdFactory.generateId(patientId);
-        
-        Appointment appointment = new Appointment(appointmentId, patient, doctor, specialty, datetime, reason, type);
+        Appointment appointment = appointmentFactory.createAppointment(patient, doctor, specialty, datetime, reason, type);
         
         appointmentRepository.add(appointment);
         return new ControllerResponse(201, "Cita solicitada correctamente", 
@@ -132,7 +133,7 @@ public class AppointmentController {
     }
     
     public ControllerResponse cancelAppointment(String appointmentId) {
-        if (validator.isEmpty(appointmentId)) {
+        if (validator.isEmpty(appointmentId) || appointmentId.equals("Select one")) {
             return new ControllerResponse(400, "Ingrese el ID de la cita", "{}");
         }
         
@@ -150,7 +151,7 @@ public class AppointmentController {
         return new ControllerResponse(200, "Cita cancelada", appointmentDto.serialize(appointment));
     }
     public ControllerResponse acceptAppointment(String appointmentId) {
-        if (validator.isEmpty(appointmentId)) {
+        if (validator.isEmpty(appointmentId) || appointmentId.equals("Select one")) {
             return new ControllerResponse(400, "Ingrese el ID de la cita", "{}");
         }
         
@@ -170,7 +171,7 @@ public class AppointmentController {
     
     public ControllerResponse completeAppointment(String appointmentId, String diagnosis, 
             String observations, String recommendedTreatment, String followUp) {
-        if (validator.isEmpty(appointmentId)) {
+        if (validator.isEmpty(appointmentId) || appointmentId.equals("Select one")) {
             return new ControllerResponse(400, "Ingrese el ID de la cita", "{}");
         }
         
@@ -202,7 +203,7 @@ public class AppointmentController {
     }
     
     public ControllerResponse rescheduleAppointment(String appointmentId, String newTime, String additionalReason) {
-        if (validator.isEmpty(appointmentId) || validator.isEmpty(newTime)) {
+        if (validator.isEmpty(appointmentId) || appointmentId.equals("Select one") || validator.isEmpty(newTime)) {
             return new ControllerResponse(400, "Complete todos los campos", "{}");
         }
         

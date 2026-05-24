@@ -112,6 +112,7 @@ public class DoctorController {
         doctor.setLicenceNumber(licenceNumber);
         doctor.setAssignedOffice(assignedOffice);
         
+        userRepository.notifyObservers();
         
         return new ControllerResponse(200, "Doctor actualizado correctamente", doctorDto.serialize(doctor));
     }

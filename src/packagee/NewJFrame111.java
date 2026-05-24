@@ -16,6 +16,7 @@ import packagee.controller.ControllerResponse;
 import packagee.controller.DoctorController;
 import packagee.controller.HospitalizationController;
 import packagee.controller.PrescriptionController;
+import packagee.facade.OspedaleFacade;
 import packagee.repository.AppointmentRepository;
 import packagee.repository.HospitalizationRepository;
 import packagee.repository.ListAppointmentRepository;
@@ -45,6 +46,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
     private DoctorController doctorController;
     private HospitalizationController hospitalizationController;
     private PrescriptionController prescriptionController;
+    private OspedaleFacade ospedaleFacade;
 
     public NewJFrame111(User user,Doctor doc, ArrayList<User> users,ArrayList<Hospitalization> hospitalizations,ArrayList<Appointment> appointments) {
         initComponents();
@@ -60,6 +62,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
         this.doctorController = new DoctorController(userRepository);
         this.hospitalizationController = new HospitalizationController(hospitalizationRepository, userRepository);
         this.prescriptionController = new PrescriptionController();
+        this.ospedaleFacade = new OspedaleFacade(appointmentController, hospitalizationController, prescriptionController);
         this.appointmentRepository.addObserver(new DataObserver() {
             @Override
             public void update() {
@@ -73,12 +76,31 @@ public class NewJFrame111 extends javax.swing.JFrame {
                 loadDoctorCombos();
             }
         });
+        this.userRepository.addObserver(new DataObserver() {
+            @Override
+            public void update() {
+                loadDoctorCombos();
+            }
+        });
         if (user instanceof Administrator)
             jButton11.setVisible(true);
         else    
             jButton11.setVisible(false);
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
+        jButton13.setText("Apply");
+        jRadioButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton6.setSelected(false);
+                loadDoctorCombos();
+            }
+        });
+        jRadioButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton5.setSelected(false);
+                loadDoctorCombos();
+            }
+        });
         loadDoctorCombos();
         loadDoctorAppointmentTable(false);
     }
@@ -1196,7 +1218,12 @@ public class NewJFrame111 extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton11ActionPerformed
 
     private void jButton13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton13ActionPerformed
-        ControllerResponse response = hospitalizationController.cancelHospitalization(String.valueOf(jComboBox6.getSelectedItem()));
+        ControllerResponse response;
+        if (jRadioButton5.isSelected()) {
+            response = ospedaleFacade.approveHospitalization(String.valueOf(jComboBox6.getSelectedItem()));
+        } else {
+            response = ospedaleFacade.cancelHospitalization(String.valueOf(jComboBox6.getSelectedItem()));
+        }
         JOptionPane.showMessageDialog(this, response.getMessage());
         if (response.isOk()) {
             loadDoctorCombos();
@@ -1204,7 +1231,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton13ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
-        ControllerResponse response = hospitalizationController.requestHospitalization(
+        ControllerResponse response = ospedaleFacade.requestHospitalization(
                 String.valueOf(jComboBox8.getSelectedItem()),
                 String.valueOf(doctor.getId()),
                 jTextField21.getText(),
@@ -1238,7 +1265,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
     }//GEN-LAST:event_jRadioButton3ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        ControllerResponse response = appointmentController.acceptAppointment(String.valueOf(jComboBox2.getSelectedItem()));
+        ControllerResponse response = ospedaleFacade.acceptAppointment(String.valueOf(jComboBox2.getSelectedItem()));
         JOptionPane.showMessageDialog(this, response.getMessage());
         if (response.isOk()) {
             loadDoctorCombos();
@@ -1247,13 +1274,27 @@ public class NewJFrame111 extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        ControllerResponse response = appointmentController.completeAppointment(
-                String.valueOf(jComboBox4.getSelectedItem()),
-                jTextArea5.getText(),
-                jTextArea6.getText(),
-                jTextArea7.getText(),
-                jTextArea8.getText()
-        );
+        String appointmentId = String.valueOf(jComboBox4.getSelectedItem());
+        Appointment appointment = appointmentRepository.findById(appointmentId);
+        int option = JOptionPane.showConfirmDialog(this, "Hospitalizar paciente desde esta cita?", "Hospitalizacion", JOptionPane.YES_NO_OPTION);
+        ControllerResponse response;
+
+        if (option == JOptionPane.YES_OPTION) {
+            response = ospedaleFacade.hospitalizeFromAppointment(
+                    appointment,
+                    jTextArea7.getText(),
+                    RoomType.IMC.name(),
+                    jTextArea6.getText()
+            );
+        } else {
+            response = ospedaleFacade.completeAppointment(
+                    appointmentId,
+                    jTextArea5.getText(),
+                    jTextArea6.getText(),
+                    jTextArea7.getText(),
+                    jTextArea8.getText()
+            );
+        }
 
         JOptionPane.showMessageDialog(this, response.getMessage());
         if (response.isOk()) {
@@ -1276,7 +1317,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
         String aditionalIformation = jTextField29.getText();
         Appointment appointment = appointmentRepository.findById(appointmentId);
 
-        ControllerResponse response = prescriptionController.prescribeMedication(
+        ControllerResponse response = ospedaleFacade.prescribeMedication(
                 appointment,
                 medicationName,
                 jTextField25.getText(),
@@ -1293,7 +1334,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        ControllerResponse response = appointmentController.rescheduleAppointment(
+        ControllerResponse response = ospedaleFacade.rescheduleAppointment(
                 String.valueOf(jComboBox3.getSelectedItem()),
                 jTextField13.getText(),
                 jTextField14.getText()
@@ -1342,7 +1383,9 @@ public class NewJFrame111 extends javax.swing.JFrame {
         }
 
         for (Hospitalization hospitalization : hospitalizations) {
-            if (hospitalization.getDoctor().getId() == doctor.getId() && hospitalization.getStatus() != HospitalizationStatus.CANCELED) {
+            if (hospitalization.getDoctor().getId() == doctor.getId()
+                    && hospitalization.getStatus() != HospitalizationStatus.CANCELED
+                    && (!jRadioButton5.isSelected() || hospitalization.getStatus() == HospitalizationStatus.REQUESTED)) {
                 jComboBox6.addItem(hospitalization.getId());
             }
         }

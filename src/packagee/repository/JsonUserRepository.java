@@ -12,15 +12,18 @@ import packagee.Doctor;
 import packagee.Patient;
 import packagee.Specialty;
 import packagee.User;
+import packagee.observer.DataObserver;
 
 public class JsonUserRepository implements UserRepository {
 
     private String filePath;
     private List<User> users;
+    private List<DataObserver> observers;
 
     public JsonUserRepository(String filePath) {
         this.filePath = filePath;
         this.users = new ArrayList<>();
+        this.observers = new ArrayList<>();
         loadUsers();
     }
 
@@ -52,6 +55,19 @@ public class JsonUserRepository implements UserRepository {
     @Override
     public void add(User user) {
         users.add(user);
+        notifyObservers();
+    }
+
+    @Override
+    public void addObserver(DataObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void notifyObservers() {
+        for (DataObserver observer : observers) {
+            observer.update();
+        }
     }
 
     private void loadUsers() {

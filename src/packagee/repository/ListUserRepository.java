@@ -2,13 +2,16 @@ package packagee.repository;
 
 import java.util.List;
 import packagee.User;
+import packagee.observer.DataObserver;
 
 public class ListUserRepository implements UserRepository {
 
     private List<User> users;
+    private java.util.List<DataObserver> observers;
 
     public ListUserRepository(List<User> users) {
         this.users = users;
+        this.observers = new java.util.ArrayList<>();
     }
 
     @Override
@@ -39,5 +42,18 @@ public class ListUserRepository implements UserRepository {
     @Override
     public void add(User user) {
         users.add(user);
+        notifyObservers();
+    }
+
+    @Override
+    public void addObserver(DataObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void notifyObservers() {
+        for (DataObserver observer : observers) {
+            observer.update();
+        }
     }
 }

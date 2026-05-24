@@ -5,6 +5,7 @@
 package packagee.dto;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
 import packagee.Hospitalization;
 
 public class HospitalizationDto {
@@ -23,5 +24,13 @@ public class HospitalizationDto {
         json.put("status", hospitalization.getStatus().name());
 
         return json.toString();
+    }
+
+    public String serializeList(java.util.List<Hospitalization> hospitalizations) {
+        JSONArray array = new JSONArray();
+        for (Hospitalization hospitalization : hospitalizations) {
+            array.put(new JSONObject(serialize(hospitalization)));
+        }
+        return array.toString();
     }
 }

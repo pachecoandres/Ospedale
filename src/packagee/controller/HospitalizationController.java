@@ -85,7 +85,7 @@ public class HospitalizationController {
     }
     
     public ControllerResponse approveHospitalization(String hospitalizationId) {
-        if (validator.isEmpty(hospitalizationId)) {
+        if (validator.isEmpty(hospitalizationId) || hospitalizationId.equals("Select one")) {
             return new ControllerResponse(400, "Ingrese el ID de la hospitalizacion", "{}");
         }
         
@@ -101,7 +101,7 @@ public class HospitalizationController {
     }
     
     public ControllerResponse cancelHospitalization(String hospitalizationId) {
-        if (validator.isEmpty(hospitalizationId)) {
+        if (validator.isEmpty(hospitalizationId) || hospitalizationId.equals("Select one")) {
             return new ControllerResponse(400, "Ingrese el ID de la hospitalizacion", "{}");
         }
         
@@ -114,6 +114,16 @@ public class HospitalizationController {
         hospitalizationRepository.notifyObservers();
         return new ControllerResponse(200, "Hospitalizacion cancelada", 
                 hospitalizationDto.serialize(hospitalization));
+    }
+
+    public ControllerResponse listPatientHospitalizations(String patientIdText) {
+        if (!validator.isValidIdText(patientIdText)) {
+            return new ControllerResponse(400, "El ID del paciente no es valido", "[]");
+        }
+
+        long patientId = Long.parseLong(patientIdText);
+        return new ControllerResponse(200, "Hospitalizaciones cargadas",
+                hospitalizationDto.serializeList(hospitalizationRepository.findByPatientId(patientId)));
     }
     
     public ControllerResponse hospitalizeFromAppointment(Appointment appointment, String reason, 

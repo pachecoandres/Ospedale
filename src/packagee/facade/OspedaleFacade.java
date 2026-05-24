@@ -37,6 +37,24 @@ public class OspedaleFacade {
         return hospitalizationController.cancelHospitalization(hospitalizationId);
     }
 
+    public ControllerResponse approveHospitalization(String hospitalizationId) {
+        return hospitalizationController.approveHospitalization(hospitalizationId);
+    }
+
+    public ControllerResponse requestHospitalization(String patientId, String doctorId,
+            String dateText, String reason, String roomType, String observations) {
+        return hospitalizationController.requestHospitalization(patientId, doctorId, dateText, reason, roomType, observations);
+    }
+
+    public ControllerResponse hospitalizeFromAppointment(Appointment appointment, String reason,
+            String roomType, String observations) {
+        return hospitalizationController.hospitalizeFromAppointment(appointment, reason, roomType, observations);
+    }
+
+    public ControllerResponse listPatientHospitalizations(String patientId) {
+        return hospitalizationController.listPatientHospitalizations(patientId);
+    }
+
     public ControllerResponse prescribeMedication(Appointment appointment, String medicationName,
             String doseText, String administrationRoute, String treatmentDurationText,
             String frequencyText, String additionalInstructions) {
