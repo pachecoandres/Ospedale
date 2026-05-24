@@ -37,10 +37,6 @@ public class UserValidator {
         }
     }
 
-    public boolean isValidTime(String time) {
-        return time != null && time.matches("([01]\\d|2[0-3]):(00|15|30|45)");
-    }
-
     public boolean isValidGender(String gender) {
         return gender != null && (gender.equals("Female") || gender.equals("Male"));
     }

@@ -1,136 +1,246 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package packagee.controller;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import packagee.Appointment;
 import packagee.AppointmentStatus;
 import packagee.Doctor;
+import packagee.Factory.AppointmentIdFactory;
 import packagee.Patient;
 import packagee.Specialty;
-import packagee.User;
 import packagee.dto.AppointmentDto;
 import packagee.repository.AppointmentRepository;
 import packagee.repository.UserRepository;
 import packagee.validation.UserValidator;
 
+/**
+ *
+ * @author natya
+ */
 public class AppointmentController {
-
+        
     private AppointmentRepository appointmentRepository;
     private UserRepository userRepository;
     private UserValidator validator;
     private AppointmentDto appointmentDto;
-
-    public AppointmentController(AppointmentRepository appointmentRepository, UserRepository userRepository) {
+    private AppointmentIdFactory appointmentIdFactory;
+    
+    public AppointmentController(AppointmentRepository appointmentRepository, UserRepository userRepository, AppointmentIdFactory appointmentIdFactory) {
+        
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.validator = new UserValidator();
         this.appointmentDto = new AppointmentDto();
+        this.appointmentIdFactory = appointmentIdFactory;
     }
-
-    public ControllerResponse requestAppointment(String patientIdText, String doctorOrSpecialty, boolean bySpecialty,
-            String dateText, String timeText, String typeText, String reason) {
-        if (hasEmptyData(patientIdText, doctorOrSpecialty, dateText, timeText, typeText, reason)) {
-            return new ControllerResponse(400, "Complete todos los campos de la cita", "{}");
+    
+    public ControllerResponse requestAppointment(String patientIdText, String doctorIdText, 
+            String specialtyText, String dateText, String timeText, String reason, String typeText) {
+        if (validator.isEmpty(patientIdText) || validator.isEmpty(dateText) || 
+            validator.isEmpty(timeText) || validator.isEmpty(reason) || 
+            validator.isEmpty(typeText)){
+            return new ControllerResponse(400, "Complete todos los campos", "{}");
         }
+        
         if (!validator.isValidIdText(patientIdText)) {
             return new ControllerResponse(400, "El ID del paciente no es valido", "{}");
         }
+        
         if (!validator.isValidDate(dateText)) {
             return new ControllerResponse(400, "La fecha debe tener formato AAAA-MM-DD", "{}");
         }
-        if (!validator.isValidTime(timeText)) {
-            return new ControllerResponse(400, "La hora debe ser HH:mm con minutos 00, 15, 30 o 45", "{}");
+        
+        if (!timeText.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
+            return new ControllerResponse(400, "La hora debe tener formato HH:mm", "{}");
         }
-        if (!typeText.equals("Remote") && !typeText.equals("In-person")) {
-            return new ControllerResponse(400, "Seleccione un tipo de cita valido", "{}");
+        
+        String []timeParts = timeText.split(":");
+        int hour = Integer.parseInt(timeParts[0]);
+        int minute = Integer.parseInt(timeParts[1]);
+        
+        if (minute != 0 && minute != 15 && minute != 30 && minute != 45) {
+            return new ControllerResponse(400, " Los minutos deben ser 00,15, 30 o 45","{}");
         }
-
-        User user = userRepository.findById(Long.parseLong(patientIdText));
-        if (!(user instanceof Patient)) {
-            return new ControllerResponse(404, "Paciente no encontrado", "{}");
+        
+        long patientId = Long.parseLong(patientIdText);
+        Patient patient = (Patient) userRepository.findById(patientId);
+        
+        if(patient == null) {
+            return new ControllerResponse(404, " El paciente no existe", "{}");
         }
-
-        LocalDateTime datetime = LocalDateTime.of(LocalDate.parse(dateText), LocalTime.parse(timeText));
-        Doctor doctor = findDoctor(doctorOrSpecialty, bySpecialty, datetime);
-        if (doctor == null) {
-            return new ControllerResponse(404, "No se encontro doctor disponible", "{}");
+        
+        LocalDate date = LocalDate.parse(dateText);
+        LocalTime time = LocalTime.of(hour, minute);
+        LocalDateTime datetime = LocalDateTime.of(date, time);
+        
+        Doctor  doctor = null;
+        Specialty specialty = null;
+        
+        if (!validator.isEmpty(doctorIdText)) {
+            if (!validator.isValidIdText(doctorIdText)){
+                return new ControllerResponse(400, "El ID del doctor no es valido", "{}");
+            }
+            
+            long doctorId = Long.parseLong(doctorIdText);
+            doctor = (Doctor) userRepository.findById(doctorId);
+            
+            if (doctor == null) {
+                return new ControllerResponse (404, "El doctor no exite", "{}");
+            }
+            specialty = doctor.getSpecialty();
+            
+            if (!doctor.isAvailable(datetime)) {
+                return new ControllerResponse (409, "El doctor no tiene disponibilidad en este horario", "{}");
+            }
+        } else if (!validator.isEmpty(specialtyText)) {
+            if (!validator.isValidSpecialty(specialtyText)){
+                return new ControllerResponse(400, "Seleccione una especialidad valida", "{}");
+            }
+            specialty = Specialty.fromDisplayString(specialtyText);
+            doctor = findAvailableDoctor(specialty, datetime);
+            
+            if (doctor == null) {
+                return new ControllerResponse(404, " No hay doctores disponibles con esa especialidad en este horario", "{}");
+            } 
+        } else {
+            return new ControllerResponse(400, " Debe especificar un doctor o una especialidad", "{}");
         }
-
-        boolean type = typeText.equals("In-person");
-        Patient patient = (Patient) user;
-        Appointment appointment = new Appointment(generateId(patient.getId()), patient, doctor, doctor.getSpecialty(), datetime, reason, type);
+        
+        boolean type = typeText.equals("Virtual");
+        
+        String appointmentId = appointmentIdFactory.generateId(patientId);
+        
+        Appointment appointment = new Appointment(appointmentId, patient, doctor, specialty, datetime, reason, type);
+        
         appointmentRepository.add(appointment);
-        return new ControllerResponse(201, "Cita solicitada correctamente", appointmentDto.serialize(appointment));
+        return new ControllerResponse(201, "Cita solicitada correctamente", 
+                appointmentDto.serialize(appointment));
     }
-
+    
     public ControllerResponse cancelAppointment(String appointmentId) {
-        if (validator.isEmpty(appointmentId) || appointmentId.equals("Select one")) {
-            return new ControllerResponse(400, "Seleccione una cita", "{}");
+        if (validator.isEmpty(appointmentId)) {
+            return new ControllerResponse(400, "Ingrese el ID de la cita", "{}");
         }
-
+        
         Appointment appointment = appointmentRepository.findById(appointmentId);
         if (appointment == null) {
             return new ControllerResponse(404, "La cita no existe", "{}");
         }
+        
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
             return new ControllerResponse(400, "No se puede cancelar una cita completada", "{}");
         }
-
+        
         appointment.setStatus(AppointmentStatus.CANCELED);
-        return new ControllerResponse(200, "Cita cancelada correctamente", appointmentDto.serialize(appointment));
+        return new ControllerResponse(200, "Cita cancelada", appointmentDto.serialize(appointment));
     }
-
-    public ControllerResponse listPatientAppointments(String patientIdText) {
-        if (!validator.isValidIdText(patientIdText)) {
-            return new ControllerResponse(400, "El ID del paciente no es valido", "[]");
+    public ControllerResponse acceptAppointment(String appointmentId) {
+        if (validator.isEmpty(appointmentId)) {
+            return new ControllerResponse(400, "Ingrese el ID de la cita", "{}");
         }
-        return new ControllerResponse(200, "Citas cargadas", appointmentDto.serializeList(appointmentRepository.findByPatientId(Long.parseLong(patientIdText))));
+        
+        Appointment appointment = appointmentRepository.findById(appointmentId);
+        if (appointment == null) {
+            return new ControllerResponse(404, "La cita no existe", "{}");
+        }
+        
+        if (appointment.getStatus() != AppointmentStatus.REQUESTED) {
+            return new ControllerResponse(400, "Solo se pueden aceptar citas en estado REQUESTED", "{}");
+        }
+        
+        appointment.setStatus(AppointmentStatus.PENDING);
+        return new ControllerResponse(200, "Cita aceptada", appointmentDto.serialize(appointment));
     }
-
-    private Doctor findDoctor(String doctorOrSpecialty, boolean bySpecialty, LocalDateTime datetime) {
-        for (User user : userRepository.findAll()) {
+    
+    public ControllerResponse completeAppointment(String appointmentId, String diagnosis, 
+            String observations, String recommendedTreatment, String followUp) {
+        if (validator.isEmpty(appointmentId)) {
+            return new ControllerResponse(400, "Ingrese el ID de la cita", "{}");
+        }
+        
+        Appointment appointment = appointmentRepository.findById(appointmentId);
+        if (appointment == null) {
+            return new ControllerResponse(404, "La cita no existe", "{}");
+        }
+        
+        if (appointment.getStatus() != AppointmentStatus.PENDING) {
+            return new ControllerResponse(400, "Solo se pueden completar citas en estado PENDING", "{}");
+        }
+        
+        if (!validator.isEmpty(diagnosis)) {
+            appointment.setDiagnosis(diagnosis);
+        }
+        if (!validator.isEmpty(observations)) {
+            appointment.setObservations(observations);
+        }
+        if (!validator.isEmpty(recommendedTreatment)) {
+            appointment.setRecommendedTreatment(recommendedTreatment);
+        }
+        if (!validator.isEmpty(followUp)) {
+            appointment.setFollowUp(followUp);
+        }
+        
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+        return new ControllerResponse(200, "Cita completada", appointmentDto.serialize(appointment));
+    }
+    
+    public ControllerResponse rescheduleAppointment(String appointmentId, String newTime, String additionalReason) {
+        if (validator.isEmpty(appointmentId) || validator.isEmpty(newTime)) {
+            return new ControllerResponse(400, "Complete todos los campos", "{}");
+        }
+        
+        Appointment appointment = appointmentRepository.findById(appointmentId);
+        if (appointment == null) {
+            return new ControllerResponse(404, "La cita no existe", "{}");
+        }
+        
+        if (!newTime.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
+            return new ControllerResponse(400, "La hora debe tener formato HH:mm (24 horas)", "{}");
+        }
+        
+        String[] timeParts = newTime.split(":");
+        int hour = Integer.parseInt(timeParts[0]);
+        int minute = Integer.parseInt(timeParts[1]);
+        
+        if (minute != 0 && minute != 15 && minute != 30 && minute != 45) {
+            return new ControllerResponse(400, "Los minutos deben ser 00, 15, 30 o 45", "{}");
+        }
+        
+        LocalDateTime currentDatetime = appointment.getDatetime();
+        LocalDateTime newDatetime = currentDatetime.withHour(hour).withMinute(minute);
+        
+        
+        Doctor doctor = appointment.getDoctor();
+        if (!doctor.isAvailable(newDatetime)) {
+            return new ControllerResponse(409, "El doctor no tiene disponibilidad en ese horario", "{}");
+        }
+        
+        appointment.setDatetime(newDatetime);
+        
+        String currentReason = appointment.getReason();
+        if (!validator.isEmpty(additionalReason)) {
+            appointment.setReason(currentReason + " | Reagendada: " + additionalReason);
+        }
+        
+        return new ControllerResponse(200, "Cita reagendada correctamente", appointmentDto.serialize(appointment));
+    }
+    
+    private Doctor findAvailableDoctor(Specialty specialty, LocalDateTime datetime) {
+        List<packagee.User> allUsers = userRepository.findAll();
+        for (packagee.User user : allUsers) {
             if (user instanceof Doctor) {
                 Doctor doctor = (Doctor) user;
-                if (matchesDoctor(doctor, doctorOrSpecialty, bySpecialty) && doctor.isAvailable(datetime)) {
+                if (doctor.getSpecialty() == specialty && doctor.isAvailable(datetime)) {
                     return doctor;
-                }
+               }
             }
         }
         return null;
-    }
-
-    private boolean matchesDoctor(Doctor doctor, String doctorOrSpecialty, boolean bySpecialty) {
-        if (bySpecialty) {
-            if (!validator.isValidSpecialty(doctorOrSpecialty)) {
-                return false;
-            }
-            Specialty specialty = Specialty.fromDisplayString(doctorOrSpecialty);
-            return doctor.getSpecialty() == specialty;
-        }
-        if (!validator.isValidIdText(doctorOrSpecialty)) {
-            return false;
-        }
-        return doctor.getId() == Long.parseLong(doctorOrSpecialty);
-    }
-
-    private String generateId(long patientId) {
-        int count = 1;
-        String prefix = "A-" + patientId + "-";
-        for (Appointment appointment : appointmentRepository.findAll()) {
-            if (appointment.getId().startsWith(prefix)) {
-                count++;
-            }
-        }
-        return prefix + String.format("%04d", count);
-    }
-
-    private boolean hasEmptyData(String... values) {
-        for (String value : values) {
-            if (validator.isEmpty(value) || value.equals("Select one")) {
-                return true;
-            }
-        }
-        return false;
     }
 }

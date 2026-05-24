@@ -61,4 +61,58 @@ public class DoctorController {
         }
         return false;
     }
+    
+    public ControllerResponse updateDoctor(String idText, String firstname, String lastname, 
+            String specialtyText, String licenceNumber, String assignedOffice, String username, 
+            String password, String confirmPassword){
+        
+        if (hasEmptyData(firstname, lastname, idText, licenceNumber, assignedOffice, username, password, confirmPassword)){
+            return new ControllerResponse(400, "Complete todos los campos", "{}");
+        }
+        
+        if (!validator.isValidIdText(idText)){
+            return new ControllerResponse(400, "El ID debe tener 12 digitos y ser mayor que 0", "{}");    
+        }
+        
+        long id = Long.parseLong(idText);
+        Doctor doctor = (Doctor) userRepository.findById(id);
+        
+        if (doctor == null) {
+            return new ControllerResponse(409, "El doctor no existe", "{}");
+        }
+        
+        if (doctor.getUsername().equals(username)) {
+            if (userRepository.findByUsername(username) != null) {
+                return new ControllerResponse(409, "Ya existe un usuario con ese username", "{}");
+            }
+        }
+        
+        if (!validator.isValidSpecialty(specialtyText)) {
+            return new ControllerResponse(400, "Seleccione una especialidad valida", "{}");
+        }
+        
+        if (!validator.isValidMedicalLicence(licenceNumber)) {
+            return new ControllerResponse(400, "La licencia debe tener fromato L-XXXXXXXXXX MTL", "{}");
+        }
+        
+        if (!validator.isValidOffice(assignedOffice)) {
+            return new ControllerResponse(400, "La oficina debe tener formato 0-XXX", "{}");
+        }
+        
+        if (!password.equals(confirmPassword)) {
+            return new ControllerResponse(400, "Las contraseñas no coinciden", "{}");
+        }
+        
+        Specialty specialty = Specialty.fromDisplayString(specialtyText);
+        doctor.setUsername(username);
+        doctor.setFirstname(firstname);
+        doctor.setLastname(lastname);
+        doctor.setPassword(password);
+        doctor.setSpecialty(specialty);
+        doctor.setLicenceNumber(licenceNumber);
+        doctor.setAssignedOffice(assignedOffice);
+        
+        
+        return new ControllerResponse(200, "Doctor actualizado correctamente", doctorDto.serialize(doctor));
+    }
 }

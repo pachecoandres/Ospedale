@@ -85,7 +85,7 @@ public class Hospitalization {
         this.reason = reason;
         this.roomType = roomType;
         this.observations = observations;
-        this.status = status;  //
+        this.status = hopsS;  //
     }
     
 }
