@@ -17,6 +17,9 @@ import packagee.Specialty;
 import packagee.dto.AppointmentDto;
 import packagee.repository.AppointmentRepository;
 import packagee.repository.UserRepository;
+import packagee.strategy.DoctorByIdSearchStrategy;
+import packagee.strategy.DoctorBySpecialtySearchStrategy;
+import packagee.strategy.DoctorSearchStrategy;
 import packagee.validation.UserValidator;
 
 /**
@@ -56,24 +59,21 @@ public class AppointmentController {
             return new ControllerResponse(400, "La fecha debe tener formato AAAA-MM-DD", "{}");
         }
         
-        if (!timeText.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
-            return new ControllerResponse(400, "La hora debe tener formato HH:mm", "{}");
+        if (!validator.isValidTime(timeText)) {
+            return new ControllerResponse(400, "La hora debe tener formato HH:mm con minutos 00, 15, 30 o 45", "{}");
         }
         
         String []timeParts = timeText.split(":");
         int hour = Integer.parseInt(timeParts[0]);
         int minute = Integer.parseInt(timeParts[1]);
         
-        if (minute != 0 && minute != 15 && minute != 30 && minute != 45) {
-            return new ControllerResponse(400, " Los minutos deben ser 00,15, 30 o 45","{}");
-        }
-        
         long patientId = Long.parseLong(patientIdText);
-        Patient patient = (Patient) userRepository.findById(patientId);
+        packagee.User patientUser = userRepository.findById(patientId);
         
-        if(patient == null) {
+        if(!(patientUser instanceof Patient)) {
             return new ControllerResponse(404, " El paciente no existe", "{}");
         }
+        Patient patient = (Patient) patientUser;
         
         LocalDate date = LocalDate.parse(dateText);
         LocalTime time = LocalTime.of(hour, minute);
@@ -87,23 +87,17 @@ public class AppointmentController {
                 return new ControllerResponse(400, "El ID del doctor no es valido", "{}");
             }
             
-            long doctorId = Long.parseLong(doctorIdText);
-            doctor = (Doctor) userRepository.findById(doctorId);
-            
+            doctor = searchDoctor(new DoctorByIdSearchStrategy(), doctorIdText, datetime);
             if (doctor == null) {
                 return new ControllerResponse (404, "El doctor no exite", "{}");
             }
             specialty = doctor.getSpecialty();
-            
-            if (!doctor.isAvailable(datetime)) {
-                return new ControllerResponse (409, "El doctor no tiene disponibilidad en este horario", "{}");
-            }
         } else if (!validator.isEmpty(specialtyText)) {
             if (!validator.isValidSpecialty(specialtyText)){
                 return new ControllerResponse(400, "Seleccione una especialidad valida", "{}");
             }
             specialty = Specialty.fromDisplayString(specialtyText);
-            doctor = findAvailableDoctor(specialty, datetime);
+            doctor = searchDoctor(new DoctorBySpecialtySearchStrategy(), specialtyText, datetime);
             
             if (doctor == null) {
                 return new ControllerResponse(404, " No hay doctores disponibles con esa especialidad en este horario", "{}");
@@ -112,7 +106,7 @@ public class AppointmentController {
             return new ControllerResponse(400, " Debe especificar un doctor o una especialidad", "{}");
         }
         
-        boolean type = typeText.equals("Virtual");
+        boolean type = typeText.equals("In-person") || typeText.equals("Presencial");
         
         String appointmentId = appointmentIdFactory.generateId(patientId);
         
@@ -121,6 +115,20 @@ public class AppointmentController {
         appointmentRepository.add(appointment);
         return new ControllerResponse(201, "Cita solicitada correctamente", 
                 appointmentDto.serialize(appointment));
+    }
+
+    public ControllerResponse listPatientAppointments(String patientIdText) {
+        if (!validator.isValidIdText(patientIdText)) {
+            return new ControllerResponse(400, "El ID del paciente no es valido", "[]");
+        }
+        return new ControllerResponse(200, "Citas cargadas", appointmentDto.serializeList(appointmentRepository.findByPatientId(Long.parseLong(patientIdText))));
+    }
+
+    public ControllerResponse listDoctorAppointments(String doctorIdText) {
+        if (!validator.isValidIdText(doctorIdText)) {
+            return new ControllerResponse(400, "El ID del doctor no es valido", "[]");
+        }
+        return new ControllerResponse(200, "Citas cargadas", appointmentDto.serializeList(appointmentRepository.findByDoctorId(Long.parseLong(doctorIdText))));
     }
     
     public ControllerResponse cancelAppointment(String appointmentId) {
@@ -138,6 +146,7 @@ public class AppointmentController {
         }
         
         appointment.setStatus(AppointmentStatus.CANCELED);
+        appointmentRepository.notifyObservers();
         return new ControllerResponse(200, "Cita cancelada", appointmentDto.serialize(appointment));
     }
     public ControllerResponse acceptAppointment(String appointmentId) {
@@ -155,6 +164,7 @@ public class AppointmentController {
         }
         
         appointment.setStatus(AppointmentStatus.PENDING);
+        appointmentRepository.notifyObservers();
         return new ControllerResponse(200, "Cita aceptada", appointmentDto.serialize(appointment));
     }
     
@@ -187,6 +197,7 @@ public class AppointmentController {
         }
         
         appointment.setStatus(AppointmentStatus.COMPLETED);
+        appointmentRepository.notifyObservers();
         return new ControllerResponse(200, "Cita completada", appointmentDto.serialize(appointment));
     }
     
@@ -200,17 +211,13 @@ public class AppointmentController {
             return new ControllerResponse(404, "La cita no existe", "{}");
         }
         
-        if (!newTime.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
-            return new ControllerResponse(400, "La hora debe tener formato HH:mm (24 horas)", "{}");
+        if (!validator.isValidTime(newTime)) {
+            return new ControllerResponse(400, "La hora debe tener formato HH:mm con minutos 00, 15, 30 o 45", "{}");
         }
         
         String[] timeParts = newTime.split(":");
         int hour = Integer.parseInt(timeParts[0]);
         int minute = Integer.parseInt(timeParts[1]);
-        
-        if (minute != 0 && minute != 15 && minute != 30 && minute != 45) {
-            return new ControllerResponse(400, "Los minutos deben ser 00, 15, 30 o 45", "{}");
-        }
         
         LocalDateTime currentDatetime = appointment.getDatetime();
         LocalDateTime newDatetime = currentDatetime.withHour(hour).withMinute(minute);
@@ -228,19 +235,11 @@ public class AppointmentController {
             appointment.setReason(currentReason + " | Reagendada: " + additionalReason);
         }
         
+        appointmentRepository.notifyObservers();
         return new ControllerResponse(200, "Cita reagendada correctamente", appointmentDto.serialize(appointment));
     }
     
-    private Doctor findAvailableDoctor(Specialty specialty, LocalDateTime datetime) {
-        List<packagee.User> allUsers = userRepository.findAll();
-        for (packagee.User user : allUsers) {
-            if (user instanceof Doctor) {
-                Doctor doctor = (Doctor) user;
-                if (doctor.getSpecialty() == specialty && doctor.isAvailable(datetime)) {
-                    return doctor;
-               }
-            }
-        }
-        return null;
+    private Doctor searchDoctor(DoctorSearchStrategy strategy, String value, LocalDateTime datetime) {
+        return strategy.findDoctor(userRepository, value, datetime);
     }
 }

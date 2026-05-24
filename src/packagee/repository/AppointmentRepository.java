@@ -6,6 +6,7 @@ package packagee.repository;
 
 import java.util.List;
 import packagee.Appointment;
+import packagee.observer.DataObserver;
 
 public interface AppointmentRepository {
     
@@ -16,5 +17,9 @@ public interface AppointmentRepository {
         
     List<Appointment> findByPatientId(long patientId);
     List<Appointment> findByDoctorId(long doctorId);
+
+    void addObserver(DataObserver observer);
+
+    void notifyObservers();
     
 }

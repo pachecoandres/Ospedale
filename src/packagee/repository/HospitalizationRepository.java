@@ -6,6 +6,7 @@ package packagee.repository;
 
 import java.util.List;
 import packagee.Hospitalization;
+import packagee.observer.DataObserver;
         
 public interface HospitalizationRepository {
     
@@ -15,4 +16,8 @@ public interface HospitalizationRepository {
     void add(Hospitalization hospitalization);
     
     List<Hospitalization> findByPatientId(long patientId);
+
+    void addObserver(DataObserver observer);
+
+    void notifyObservers();
 }

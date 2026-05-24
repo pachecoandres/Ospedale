@@ -26,7 +26,7 @@ public class AppointmentDto {
         json.put("specialty", appointment.getSpecialty().name());
         json.put("datetime", appointment.getDatetime().toString());
         json.put("reason", appointment.getReason());
-        json.put("type", appointment.isType() ? "Virtual" : "Presencial");
+        json.put("type", appointment.isType() ? "In-person" : "Remote");
         json.put("status", appointment.getStatus().name());
         
         if (appointment.getDiagnosis() != null) {
@@ -57,6 +57,14 @@ public class AppointmentDto {
         json.put("prescriptions", prescriptions);
         
         return json.toString();
+    }
+
+    public String serializeList(java.util.List<Appointment> appointments) {
+        JSONArray array = new JSONArray();
+        for (Appointment appointment : appointments) {
+            array.put(new JSONObject(serialize(appointment)));
+        }
+        return array.toString();
     }
     
 }

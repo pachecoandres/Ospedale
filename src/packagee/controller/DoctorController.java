@@ -75,16 +75,16 @@ public class DoctorController {
         }
         
         long id = Long.parseLong(idText);
-        Doctor doctor = (Doctor) userRepository.findById(id);
+        packagee.User user = userRepository.findById(id);
         
-        if (doctor == null) {
+        if (!(user instanceof Doctor)) {
             return new ControllerResponse(409, "El doctor no existe", "{}");
         }
+        Doctor doctor = (Doctor) user;
         
-        if (doctor.getUsername().equals(username)) {
-            if (userRepository.findByUsername(username) != null) {
-                return new ControllerResponse(409, "Ya existe un usuario con ese username", "{}");
-            }
+        packagee.User userWithUsername = userRepository.findByUsername(username);
+        if (userWithUsername != null && userWithUsername.getId() != id) {
+            return new ControllerResponse(409, "Ya existe un usuario con ese username", "{}");
         }
         
         if (!validator.isValidSpecialty(specialtyText)) {

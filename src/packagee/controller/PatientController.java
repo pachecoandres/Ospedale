@@ -81,16 +81,16 @@ public class PatientController {
         }
         
         long id = Long.parseLong(idText);
-        Patient patient = (Patient) userRepository.findById(id);
+        packagee.User user = userRepository.findById(id);
         
-        if (patient == null) {
+        if (!(user instanceof Patient)) {
             return new ControllerResponse(409, "El paciente no existe", "{}");
         }
+        Patient patient = (Patient) user;
         
-        if (patient.getUsername().equals(username)) {
-            if (userRepository.findByUsername(username) != null) {
-                return new ControllerResponse(409, "Ya existe un usuario con ese username", "{}");
-            }
+        packagee.User userWithUsername = userRepository.findByUsername(username);
+        if (userWithUsername != null && userWithUsername.getId() != id) {
+            return new ControllerResponse(409, "Ya existe un usuario con ese username", "{}");
         }
         
         if (!validator.isValidGender(gender)) {
@@ -101,15 +101,15 @@ public class PatientController {
             return new ControllerResponse(400, "La fecha debe tener formato AAA-MM-DD", "{}");
         }
         
-        if (!validator.isValidGender(phoneText)) {
+        if (!validator.isValidPhone(phoneText)) {
             return new ControllerResponse(400, "El telefono debe tener 10 digitos", "{}");
         }
         
-        if (!validator.isValidGender(email)) {
+        if (!validator.isValidEmail(email)) {
             return new ControllerResponse(400, "El email no es valido", "{}");
         }
         
-        if (!validator.isValidGender(confirmPassword)) {
+        if (!password.equals(confirmPassword)) {
             return new ControllerResponse(400, "Las contraseñas no coinciden", "{}");
         }
         

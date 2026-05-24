@@ -54,15 +54,17 @@ public class HospitalizationController {
         long patientId = Long.parseLong(patientIdText);
         long doctorId = Long.parseLong(doctorIdText);
         
-        Patient patient = (Patient) userRepository.findById(patientId);
-        if (patient == null) {
+        packagee.User patientUser = userRepository.findById(patientId);
+        if (!(patientUser instanceof Patient)) {
             return new ControllerResponse(404, "El paciente no existe", "{}");
         }
+        Patient patient = (Patient) patientUser;
         
-        Doctor doctor = (Doctor) userRepository.findById(doctorId);
-        if (doctor == null) {
+        packagee.User doctorUser = userRepository.findById(doctorId);
+        if (!(doctorUser instanceof Doctor)) {
             return new ControllerResponse(404, "El doctor no existe", "{}");
         }
+        Doctor doctor = (Doctor) doctorUser;
         
         RoomType roomType;
         try {
@@ -93,6 +95,7 @@ public class HospitalizationController {
         }
         
         hospitalization.setStatus(HospitalizationStatus.ONGOING);
+        hospitalizationRepository.notifyObservers();
         return new ControllerResponse(200, "Hospitalizacion aprobada", 
                 hospitalizationDto.serialize(hospitalization));
     }
@@ -108,6 +111,7 @@ public class HospitalizationController {
         }
         
         hospitalization.setStatus(HospitalizationStatus.CANCELED);
+        hospitalizationRepository.notifyObservers();
         return new ControllerResponse(200, "Hospitalizacion cancelada", 
                 hospitalizationDto.serialize(hospitalization));
     }
@@ -147,7 +151,7 @@ public class HospitalizationController {
     
     private String generateHospitalizationId(long patientId) {
         List<Hospitalization> patientHospitalizations = hospitalizationRepository.findByPatientId(patientId);
-        int count = patientHospitalizations.size();
+        int count = patientHospitalizations.size() + 1;
         return String.format("H-%d-%04d", patientId, count);
     }
 }

@@ -5,8 +5,10 @@
 package packagee.repository;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import packagee.Appointment;
+import packagee.observer.DataObserver;
 
 /**
  *
@@ -15,9 +17,16 @@ import packagee.Appointment;
 public class ListAppointmentRepository implements AppointmentRepository {
     
     private List<Appointment> appointments;
+    private List<DataObserver> observers;
     
     public ListAppointmentRepository(){
         this.appointments = new ArrayList<>();
+        this.observers = new ArrayList<>();
+    }
+
+    public ListAppointmentRepository(List<Appointment> appointments){
+        this.appointments = appointments;
+        this.observers = new ArrayList<>();
     }
     
     @Override
@@ -38,6 +47,7 @@ public class ListAppointmentRepository implements AppointmentRepository {
     @Override
     public void add(Appointment appointment) {
         appointments.add(appointment);
+        notifyObservers();
     }
     
     @Override
@@ -48,6 +58,7 @@ public class ListAppointmentRepository implements AppointmentRepository {
                 result.add(a);
             }
         }
+        result.sort(Comparator.comparing(Appointment::getDatetime).reversed());
         return result;
     }
     
@@ -59,6 +70,19 @@ public class ListAppointmentRepository implements AppointmentRepository {
                 result.add(a);
             }
         }
+        result.sort(Comparator.comparing(Appointment::getDatetime).reversed());
         return result;
+    }
+
+    @Override
+    public void addObserver(DataObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void notifyObservers() {
+        for (DataObserver observer : observers) {
+            observer.update();
+        }
     }
 }
