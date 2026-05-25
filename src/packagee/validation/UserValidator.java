@@ -18,7 +18,7 @@ public class UserValidator {
     }
 
     public boolean isValidEmail(String email) {
-        return email != null && email.matches("^[\\w.-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
+        return email != null && email.matches("^[\\w.-]+@[\\w.-]+\\.com$");
     }
 
     public boolean isValidPhone(String phone) {

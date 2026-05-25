@@ -85,6 +85,7 @@ public class NewJFrame1 extends javax.swing.JFrame {
         }
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
+        loadPatientData();
         loadPatientCombos();
         loadAppointmentTable();
     }
@@ -848,6 +849,7 @@ public class NewJFrame1 extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(this, response.getMessage());
         if (response.isOk()) {
             this.patient = (Patient) userRepository.findById(patient.getId());
+            loadPatientData();
         }
 
     }//GEN-LAST:event_jButton9ActionPerformed
@@ -957,6 +959,19 @@ public class NewJFrame1 extends javax.swing.JFrame {
                 jComboBox4.addItem(appointment.getId());
             }
         }
+    }
+
+    private void loadPatientData() {
+        jTextField1.setText(patient.getFirstname());
+        jTextField2.setText(patient.getLastname());
+        jComboBox6.setSelectedItem(patient.isGender() ? "Female" : "Male");
+        jTextField4.setText(patient.getBirthdate().toString());
+        jTextField8.setText(patient.getAddress());
+        jTextField7.setText(String.valueOf(patient.getPhone()));
+        jTextField6.setText(patient.getEmail());
+        jTextField11.setText(patient.getUsername());
+        jTextField9.setText(patient.getPassword());
+        jTextField10.setText(patient.getPassword());
     }
 
     private void loadAppointmentTable() {

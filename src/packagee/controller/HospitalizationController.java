@@ -14,6 +14,7 @@ import packagee.HospitalizationStatus;
 import packagee.Patient;
 import packagee.RoomType;
 import packagee.dto.HospitalizationDto;
+import packagee.repository.AppointmentRepository;
 import packagee.repository.HospitalizationRepository;
 import packagee.repository.UserRepository;
 import packagee.validation.UserValidator;
@@ -22,6 +23,7 @@ import packagee.validation.UserValidator;
 public class HospitalizationController {
     
     private HospitalizationRepository hospitalizationRepository;
+    private AppointmentRepository appointmentRepository;
     private UserRepository userRepository;
     private UserValidator validator;
     private HospitalizationDto hospitalizationDto;
@@ -31,6 +33,11 @@ public class HospitalizationController {
         this.userRepository = userRepository;
         this.validator = new UserValidator();
         this.hospitalizationDto = new HospitalizationDto();
+    }
+
+    public HospitalizationController(HospitalizationRepository hospitalizationRepository, UserRepository userRepository, AppointmentRepository appointmentRepository) {
+        this(hospitalizationRepository, userRepository);
+        this.appointmentRepository = appointmentRepository;
     }
     
     public ControllerResponse requestHospitalization(String patientIdText, String doctorIdText, 
@@ -146,6 +153,9 @@ public class HospitalizationController {
         }
         
         appointment.setStatus(AppointmentStatus.COMPLETED);
+        if (appointmentRepository != null) {
+            appointmentRepository.notifyObservers();
+        }
         
         String hospitalizationId = generateHospitalizationId(appointment.getPatient().getId());
         LocalDate date = LocalDate.now();
@@ -161,7 +171,7 @@ public class HospitalizationController {
     
     private String generateHospitalizationId(long patientId) {
         List<Hospitalization> patientHospitalizations = hospitalizationRepository.findByPatientId(patientId);
-        int count = patientHospitalizations.size() + 1;
+        int count = patientHospitalizations.size();
         return String.format("H-%d-%04d", patientId, count);
     }
 }

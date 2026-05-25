@@ -18,7 +18,7 @@ public class AppointmentIdFactory {
     
     public String generateId(long patientId) {
         List<Appointment> patientAppointments = appointmentRepository.findByPatientId(patientId);
-        int count = patientAppointments.size() + 1;
+        int count = patientAppointments.size();
         return String.format("A-%d-%04d", patientId, count);
     }
 }

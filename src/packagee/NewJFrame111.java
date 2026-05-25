@@ -60,7 +60,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
         this.hospitalizationRepository = new ListHospitalizationRepository(hospitalizations);
         this.appointmentController = new AppointmentController(appointmentRepository, userRepository, new AppointmentIdFactory(appointmentRepository));
         this.doctorController = new DoctorController(userRepository);
-        this.hospitalizationController = new HospitalizationController(hospitalizationRepository, userRepository);
+        this.hospitalizationController = new HospitalizationController(hospitalizationRepository, userRepository, appointmentRepository);
         this.prescriptionController = new PrescriptionController();
         this.ospedaleFacade = new OspedaleFacade(appointmentController, hospitalizationController, prescriptionController);
         this.appointmentRepository.addObserver(new DataObserver() {
@@ -101,6 +101,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
                 loadDoctorCombos();
             }
         });
+        loadDoctorData();
         loadDoctorCombos();
         loadDoctorAppointmentTable(false);
     }
@@ -1202,6 +1203,7 @@ public class NewJFrame111 extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(this, response.getMessage());
         if (response.isOk()) {
             this.doctor = (Doctor) userRepository.findById(doctor.getId());
+            loadDoctorData();
         }
     }//GEN-LAST:event_jButton9ActionPerformed
 
@@ -1387,6 +1389,30 @@ public class NewJFrame111 extends javax.swing.JFrame {
                     && hospitalization.getStatus() != HospitalizationStatus.CANCELED
                     && (!jRadioButton5.isSelected() || hospitalization.getStatus() == HospitalizationStatus.REQUESTED)) {
                 jComboBox6.addItem(hospitalization.getId());
+            }
+        }
+    }
+
+    private void loadDoctorData() {
+        jTextField1.setText(doctor.getFirstname());
+        jTextField2.setText(doctor.getLastname());
+        selectDoctorSpecialty();
+        jTextField6.setText(doctor.getLicenceNumber());
+        jTextField8.setText(doctor.getAssignedOffice());
+        jTextField7.setText(doctor.getUsername());
+        jTextField9.setText(doctor.getPassword());
+        jTextField10.setText(doctor.getPassword());
+    }
+
+    private void selectDoctorSpecialty() {
+        for (int i = 0; i < jComboBox1.getItemCount(); i++) {
+            String item = jComboBox1.getItemAt(i);
+            try {
+                if (Specialty.fromDisplayString(item) == doctor.getSpecialty()) {
+                    jComboBox1.setSelectedIndex(i);
+                    return;
+                }
+            } catch (Exception e) {
             }
         }
     }
